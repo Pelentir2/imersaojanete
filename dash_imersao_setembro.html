@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard — Imersão Presencial Setembro</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+
+body {
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  background: #08080f;
+  color: #e0e0f0;
+  min-height: 100vh;
+  padding: 28px 24px;
+}
+
+/* ── HEADER ── */
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 14px;
+  margin-bottom: 30px;
+}
+.header-left small {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: #7c6af7;
+}
+.header-left h2 {
+  font-size: 24px;
+  font-weight: 800;
+  color: #fff;
+  margin: 3px 0 6px;
+}
+.campaign-tag {
+  font-family: monospace;
+  font-size: 10px;
+  background: #11111e;
+  border: 1px solid #1e1e36;
+  color: #55558a;
+  padding: 3px 10px;
+  border-radius: 4px;
+  display: inline-block;
+}
+.header-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+}
+.status-badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: #0b1f0b;
+  border: 1px solid #1a441a;
+  color: #4caf50;
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: .05em;
+}
+.dot { width:7px; height:7px; background:#4caf50; border-radius:50%; animation:pulse 2s infinite; }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.3} }
+
+.refresh-btn {
+  background: #11111e;
+  border: 1px solid #1e1e36;
+  color: #7c6af7;
+  padding: 6px 16px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background .2s;
+}
+.refresh-btn:hover { background: #1a1a30; }
+.last-update { font-size: 10px; color: #2a2a55; text-align: right; }
+
+/* ── TOGGLE ── */
+.toggle-bar {
+  display: flex;
+  background: #0d0d1a;
+  border: 1px solid #181830;
+  border-radius: 8px;
+  padding: 4px;
+  width: fit-content;
+  margin-bottom: 26px;
+}
+.toggle-btn {
+  padding: 8px 32px;
+  border: none;
+  background: transparent;
+  color: #44447a;
+  font-size: 13px;
+  font-weight: 600;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all .2s;
+}
+.toggle-btn.active { background: #7c6af7; color: #fff; }
+
+/* ── SECTION LABEL ── */
+.sec {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: #33337a;
+  margin: 26px 0 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.sec::after { content:''; flex:1; height:1px; background:#111128; }
+
+/* ── CARDS ── */
+.grid3 { display:grid; grid-template-columns:repeat(3,1fr); gap:12px; }
+.grid4 { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; }
+
+.card {
+  background: #0e0e1c;
+  border: 1px solid #191930;
+  border-radius: 10px;
+  padding: 18px 20px;
+  position: relative;
+  overflow: hidden;
+  transition: border-color .2s;
+}
+.card:hover { border-color: #252545; }
+.card::before {
+  content:'';
+  position:absolute;
+  top:0; left:0; right:0;
+  height:2px;
+  background: var(--accent,#7c6af7);
+}
+.card.purple { --accent:#7c6af7; }
+.card.green  { --accent:#4caf50; }
+.card.orange { --accent:#ff9800; }
+.card.blue   { --accent:#2196f3; }
+.card.gray   { --accent:#404060; }
+
+.card-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: #33336a;
+  margin-bottom: 12px;
+}
+.card-value {
+  font-size: 28px;
+  font-weight: 800;
+  color: #fff;
+  line-height: 1;
+  margin-bottom: 5px;
+}
+.card-value.sm    { font-size:22px; }
+.card-value.green { color:#4caf50; }
+.card-value.muted { color:#222240; }
+.card-value.orange{ color:#ff9800; }
+
+.card-sub  { font-size:11px; color:#28285a; margin-top:4px; }
+.card-note { font-size:10px; color:#22225a; margin-top:6px; }
+
+.prog-wrap { margin-top:10px; }
+.prog-bg   { background:#141428; border-radius:4px; height:4px; overflow:hidden; }
+.prog-fill { height:100%; border-radius:4px; transition:width .6s ease; }
+
+/* ── TABLE ── */
+.table-wrap {
+  background: #0e0e1c;
+  border: 1px solid #191930;
+  border-radius: 10px;
+  overflow: auto;
+  margin-top: 8px;
+}
+table { width:100%; border-collapse:collapse; font-size:12px; }
+thead tr { background:#09091a; }
+th {
+  padding: 10px 14px;
+  text-align: left;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: #28287a;
+  border-bottom: 1px solid #111128;
+  white-space: nowrap;
+}
+td {
+  padding: 10px 14px;
+  border-bottom: 1px solid #0f0f22;
+  color: #a0a0cc;
+  white-space: nowrap;
+}
+tr:last-child td { border-bottom:none; }
+tr:hover td { background:#111120; }
+.t-date  { color:#5555a0; font-weight:700; }
+.t-green { color:#4caf50; font-weight:700; }
+.t-muted { color:#1e1e40; }
+.t-bold  { color:#d0d0f0; font-weight:600; }
+.t-total { background:#13132a !important; }
+.t-total td { color:#fff; font-weight:700; border-bottom:none; }
+
+/* ── TIP BOX ── */
+.tip {
+  background: #090918;
+  border: 1px solid #141430;
+  border-left: 3px solid #7c6af7;
+  border-radius: 6px;
+  padding: 14px 18px;
+  margin-top: 24px;
+  font-size: 11px;
+  color: #44448a;
+  line-height: 1.7;
+}
+.tip strong { color:#7070b0; }
+
+/* ── FOOTER ── */
+.footer {
+  margin-top:28px;
+  padding-top:16px;
+  border-top: 1px solid #111128;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  flex-wrap:wrap;
+  gap:8px;
+  font-size:11px;
+  color:#1e1e45;
+}
+
+/* ── STATES ── */
+.view { display:none; }
+.view.active { display:block; }
+.loading { text-align:center; padding:40px; color:#2a2a60; font-size:13px; }
+.spinner {
+  width:22px; height:22px;
+  border:2px solid #141430;
+  border-top-color:#7c6af7;
+  border-radius:50%;
+  animation:spin .8s linear infinite;
+  margin:0 auto 10px;
+}
+@keyframes spin { to{transform:rotate(360deg)} }
+.error-msg { text-align:center; padding:30px; color:#a04040; font-size:13px; }
+
+@media(max-width:700px){
+  .grid3,.grid4 { grid-template-columns:repeat(2,1fr); }
+}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <div class="header-left">
+    <small>Meta Ads · Janete Mentora</small>
+    <h2>Imersão Presencial — Setembro</h2>
+    <div class="campaign-tag">[WP][IMERSÃO-PRESENCIAL-SETEMBRO][VENDAS]</div>
+  </div>
+  <div class="header-right">
+    <div class="status-badge"><div class="dot"></div>CAMPANHA ATIVA</div>
+    <button class="refresh-btn" onclick="loadData()">↻ Atualizar dados</button>
+    <div class="last-update" id="last-update">—</div>
+  </div>
+</div>
+
+<!-- TOGGLE -->
+<div class="toggle-bar">
+  <button class="toggle-btn active" id="btn-total"  onclick="setView('total')">Total Acumulado</button>
+  <button class="toggle-btn"        id="btn-diario" onclick="setView('diario')">Por Dia</button>
+</div>
+
+<!-- VIEW: TOTAL -->
+<div class="view active" id="view-total">
+  <div class="sec">Métricas Primárias</div>
+  <div class="grid3" id="primary-cards"><div class="loading"><div class="spinner"></div>Carregando...</div></div>
+
+  <div class="sec">Métricas Secundárias</div>
+  <div class="grid4" id="secondary-cards"></div>
+
+  <div class="tip">
+    <strong>💡 Como ler este dashboard:</strong><br>
+    <strong>Connect Rate</strong> = Visualizações de Página de Destino ÷ Cliques no Link × 100.
+    Abaixo de 60% sinaliza problema na landing (lentidão, erro, link quebrado).
+    <strong>Meta de CPA:</strong> abaixo de R$21,40 garante ROAS positivo com ingresso a R$98.
+    <strong>Receita Estimada</strong> = Compras × R$98.
+    Os dados são atualizados automaticamente pela sua extensão do Google Sheets — clique em "Atualizar dados" para recarregar.
+  </div>
+</div>
+
+<!-- VIEW: DIÁRIO -->
+<div class="view" id="view-diario">
+  <div class="sec">Histórico Diário</div>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Data</th>
+          <th>💰 Investido</th>
+          <th>🛒 Compras</th>
+          <th>💵 Custo/Compra</th>
+          <th>CPM</th>
+          <th>CPC</th>
+          <th>CTR</th>
+          <th>Cliques</th>
+          <th>Viz. Pág. Dest.</th>
+          <th>⚡ Connect Rate</th>
+        </tr>
+      </thead>
+      <tbody id="daily-body"><tr><td colspan="10" class="loading"><div class="spinner"></div></td></tr></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- FOOTER -->
+<div class="footer">
+  <span>📊 Fonte: Google Sheets · Extensão Meta Ads</span>
+  <span>Conta: Janete Mentora · act_249776797767975</span>
+</div>
+
+<script>
+// ─── CONFIG ────────────────────────────────────────────────────────────────
+const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSM2scJLP_uLxMd296VIlucFSEULp-Q9B8hkRE2mTXjKy1uztD1OZSOW7chx-rrSNGpoDmUnk2SQ-nk/pub?gid=1092009377&single=true&output=csv';
+const TICKET    = 98;
+const MAX_VAGAS = 70;
+const ORCAMENTO = 1500;
+
+// Mapeamento das colunas da planilha → campos internos
+// Colunas: Day | Amount Spent | Results | Cost per Result | CPM | Outbound CTR | CPC | Link Clicks | Landing Page Views | Ad Name | Ad Set Name | Campaign Name
+const COL = {
+  day        : 'Day',
+  spent      : 'Amount Spent',
+  purchases  : 'Results',
+  cpp        : 'Cost per Result',
+  cpm        : 'CPM (Cost per 1,000 Impressions)',
+  ctr        : 'Outbound CTR (Click-Through Rate)',
+  cpc        : 'CPC (Cost per Link Click)',
+  clicks     : 'Link Clicks',
+  lpv        : 'Landing Page Views',
+  adName     : 'Ad Name',
+  adsetName  : 'Ad Set Name',
+  campaign   : 'Campaign Name',
+};
+
+// ─── HELPERS ───────────────────────────────────────────────────────────────
+function n(v)    { const x = parseFloat(String(v||'').replace(',','.')); return isNaN(x)?0:x; }
+function brl(v)  { return 'R$' + n(v).toFixed(2).replace('.',','); }
+function pct(v)  { return n(v).toFixed(2).replace('.',',') + '%'; }
+function intl(v) { return Math.round(n(v)).toLocaleString('pt-BR'); }
+function fmtDay(s) {
+  if(!s) return '—';
+  // Tenta formatar DD/MM/YYYY
+  const d = new Date(s);
+  if(!isNaN(d)) return d.toLocaleDateString('pt-BR');
+  return s;
+}
+
+// ─── VIEW TOGGLE ──────────────────────────────────────────────────────────
+function setView(v) {
+  ['total','diario'].forEach(id => {
+    document.getElementById('view-'+id).classList.toggle('active', id===v);
+    document.getElementById('btn-'+id).classList.toggle('active', id===v);
+  });
+}
+
+// ─── AGGREGATE ────────────────────────────────────────────────────────────
+function aggregate(rows) {
+  const t = { spent:0, purchases:0, clicks:0, lpv:0, impressions:0 };
+  rows.forEach(r => {
+    t.spent     += n(r[COL.spent]);
+    t.purchases += n(r[COL.purchases]);
+    t.clicks    += n(r[COL.clicks]);
+    t.lpv       += n(r[COL.lpv]);
+    // impressões = spent / cpm * 1000
+    const cpm = n(r[COL.cpm]);
+    if(cpm > 0) t.impressions += (n(r[COL.spent]) / cpm) * 1000;
+  });
+  t.cpm = t.impressions > 0 ? (t.spent / t.impressions) * 1000 : 0;
+  t.cpc = t.clicks > 0 ? t.spent / t.clicks : 0;
+  t.ctr = t.impressions > 0 ? (t.clicks / t.impressions) * 100 : 0;
+  t.cpp = t.purchases > 0 ? t.spent / t.purchases : 0;
+  t.connectRate = t.clicks > 0 ? (t.lpv / t.clicks) * 100 : 0;
+  return t;
+}
+
+// ─── RENDER TOTAL ─────────────────────────────────────────────────────────
+function renderTotal(rows) {
+  const d = aggregate(rows);
+  const receita   = d.purchases * TICKET;
+  const orcPct    = Math.min((d.spent / ORCAMENTO) * 100, 100);
+  const vagasPct  = Math.min((d.purchases / MAX_VAGAS) * 100, 100);
+  const vagas     = MAX_VAGAS - d.purchases;
+
+  // PRIMÁRIAS
+  document.getElementById('primary-cards').innerHTML = `
+    <div class="card green">
+      <div class="card-label">🛒 Compras</div>
+      <div class="card-value ${d.purchases===0?'muted':'green'}">${Math.round(d.purchases)}</div>
+      <div class="card-sub">${vagas} vagas restantes de ${MAX_VAGAS}</div>
+      <div class="prog-wrap">
+        <div class="prog-bg"><div class="prog-fill" style="width:${vagasPct}%;background:#4caf50"></div></div>
+      </div>
+      <div class="card-note">${vagasPct.toFixed(1)}% das vagas preenchidas</div>
+    </div>
+    <div class="card orange">
+      <div class="card-label">💵 Custo por Compra</div>
+      <div class="card-value ${d.purchases===0?'muted':d.cpp<=21.40?'green':'orange'} sm">
+        ${d.purchases===0 ? '—' : brl(d.cpp)}
+      </div>
+      <div class="card-sub">Meta: abaixo de R$21,40</div>
+      <div class="card-note">
+        ${d.purchases===0 ? 'Aguardando primeira conversão' : d.cpp<=21.40 ? '✅ Dentro da meta' : '⚠️ Acima da meta'}
+      </div>
+    </div>
+    <div class="card purple">
+      <div class="card-label">💰 Valor Investido</div>
+      <div class="card-value">${brl(d.spent)}</div>
+      <div class="card-sub">Receita estimada: ${brl(receita)}</div>
+      <div class="prog-wrap">
+        <div class="prog-bg"><div class="prog-fill" style="width:${orcPct}%;background:#7c6af7"></div></div>
+      </div>
+      <div class="card-note">${orcPct.toFixed(1)}% do orçamento de R$1.500</div>
+    </div>
+  `;
+
+  // SECUNDÁRIAS
+  document.getElementById('secondary-cards').innerHTML = `
+    <div class="card blue">
+      <div class="card-label">📊 CPM</div>
+      <div class="card-value sm">${brl(d.cpm)}</div>
+      <div class="card-note">Meta: abaixo de R$35,00</div>
+    </div>
+    <div class="card blue">
+      <div class="card-label">🖱️ CPC</div>
+      <div class="card-value sm">${brl(d.cpc)}</div>
+      <div class="card-note">Meta: abaixo de R$3,50</div>
+    </div>
+    <div class="card blue">
+      <div class="card-label">📈 CTR</div>
+      <div class="card-value sm">${pct(d.ctr)}</div>
+      <div class="card-note">Meta: acima de 1%</div>
+    </div>
+    <div class="card blue">
+      <div class="card-label">🏠 Viz. Pág. Destino</div>
+      <div class="card-value sm">${intl(d.lpv)}</div>
+      <div class="card-note">Visualizações da landing page</div>
+    </div>
+    <div class="card purple">
+      <div class="card-label">⚡ Connect Rate</div>
+      <div class="card-value sm ${d.connectRate<60&&d.clicks>0?'orange':''}">${d.clicks>0?pct(d.connectRate):'—'}</div>
+      <div class="card-note">Viz. Pág. Dest. ÷ Cliques × 100</div>
+    </div>
+    <div class="card gray">
+      <div class="card-label">🖱️ Cliques no Link</div>
+      <div class="card-value sm">${intl(d.clicks)}</div>
+      <div class="card-note">Total de cliques registrados</div>
+    </div>
+    <div class="card gray">
+      <div class="card-label">👁️ Impressões Est.</div>
+      <div class="card-value sm">${intl(d.impressions)}</div>
+      <div class="card-note">Calculado via CPM × Investido</div>
+    </div>
+    <div class="card green">
+      <div class="card-label">💚 Receita Estimada</div>
+      <div class="card-value sm ${d.purchases===0?'muted':'green'}">${brl(receita)}</div>
+      <div class="card-note">Compras × R$${TICKET}</div>
+    </div>
+  `;
+}
+
+// ─── RENDER DAILY TABLE ───────────────────────────────────────────────────
+function renderDaily(rows) {
+  const tbody = document.getElementById('daily-body');
+  if(!rows||rows.length===0) {
+    tbody.innerHTML = '<tr><td colspan="10" style="text-align:center;padding:28px;color:#222250">Nenhum dado disponível.</td></tr>';
+    return;
+  }
+
+  // Agrupa por dia
+  const byDay = {};
+  rows.forEach(r => {
+    const day = r[COL.day] || '—';
+    if(!byDay[day]) byDay[day] = [];
+    byDay[day].push(r);
+  });
+
+  const dayKeys = Object.keys(byDay).sort();
+
+  const rowsHTML = dayKeys.map(day => {
+    const d = aggregate(byDay[day]);
+    const cr = d.clicks > 0 ? pct(d.connectRate) : '—';
+    return `<tr>
+      <td class="t-date">${fmtDay(day)}</td>
+      <td class="t-bold">${brl(d.spent)}</td>
+      <td class="${d.purchases>0?'t-green':'t-muted'}">${Math.round(d.purchases)}</td>
+      <td class="${d.purchases>0?'t-bold':'t-muted'}">${d.purchases>0?brl(d.cpp):'—'}</td>
+      <td>${brl(d.cpm)}</td>
+      <td>${brl(d.cpc)}</td>
+      <td>${pct(d.ctr)}</td>
+      <td>${intl(d.clicks)}</td>
+      <td>${intl(d.lpv)}</td>
+      <td class="${d.connectRate<60&&d.clicks>0?'t-orange':''}">${cr}</td>
+    </tr>`;
+  }).join('');
+
+  // Linha de total
+  const tot = aggregate(rows);
+  const totCR = tot.clicks > 0 ? pct(tot.connectRate) : '—';
+  const totalHTML = `<tr class="t-total">
+    <td class="t-date">TOTAL</td>
+    <td>${brl(tot.spent)}</td>
+    <td class="${tot.purchases>0?'t-green':''}">${Math.round(tot.purchases)}</td>
+    <td>${tot.purchases>0?brl(tot.cpp):'—'}</td>
+    <td>${brl(tot.cpm)}</td>
+    <td>${brl(tot.cpc)}</td>
+    <td>${pct(tot.ctr)}</td>
+    <td>${intl(tot.clicks)}</td>
+    <td>${intl(tot.lpv)}</td>
+    <td>${totCR}</td>
+  </tr>`;
+
+  tbody.innerHTML = rowsHTML + totalHTML;
+}
+
+// ─── LOAD DATA ────────────────────────────────────────────────────────────
+function loadData() {
+  // Reset UI
+  document.getElementById('primary-cards').innerHTML   = '<div class="loading"><div class="spinner"></div>Buscando dados...</div>';
+  document.getElementById('secondary-cards').innerHTML = '';
+  document.getElementById('daily-body').innerHTML      = '<tr><td colspan="10" class="loading"><div class="spinner"></div></td></tr>';
+
+  Papa.parse(CSV_URL, {
+    download: true,
+    header: true,
+    skipEmptyLines: true,
+    complete: function(results) {
+      const rows = results.data;
+
+      if(!rows||rows.length===0) {
+        document.getElementById('primary-cards').innerHTML = '<div class="error-msg">⚠️ Planilha vazia ou sem dados ainda.</div>';
+        return;
+      }
+
+      renderTotal(rows);
+      renderDaily(rows);
+      document.getElementById('last-update').textContent = 'Atualizado: ' + new Date().toLocaleString('pt-BR');
+    },
+    error: function(err) {
+      document.getElementById('primary-cards').innerHTML =
+        '<div class="error-msg">⚠️ Erro ao carregar dados. Verifique se a planilha está pública.<br><small>' + err + '</small></div>';
+    }
+  });
+}
+
+// Carrega ao abrir
+loadData();
+</script>
+</body>
+</html>
